@@ -1,22 +1,25 @@
-from sqlalchemy import Column, String, Integer, DateTime
+from sqlalchemy import Column, String, Integer, DateTime, Boolean, func
 from functions_app.database.session import Base
+from sqlalchemy.types import Enum
+from functions_app.src.users.constants import UserStatus
 
 
 class User(Base):
-    __tablename__ = "usuarios"
+    __tablename__ = "users"
 
-    usuario_id = Column(String(36), primary_key=True)
-    nombre = Column(String(100))
+    user_id = Column(String(36), primary_key=True)
+    name = Column(String(100))
     alias = Column(String(100))
-    rut = Column(String(16))
-    correo = Column(String(100))
-    clave = Column(String(256))
-    cambiar_clave = Column(String(1))
-    ultimo_ingreso = Column(DateTime)
-    estado_usuario = Column(Integer, default=1)
-    acceso_web = Column(String(1))
-    fecha_creacion = Column(DateTime)
-    fecha_modificacion = Column(DateTime)
+    dni = Column(String(16), unique=True, index=True)
+    email = Column(String(100), unique=True, index=True)
+    phone_number = Column(String(20))
+    phone_number_alternative = Column(String(20))
+    password = Column(String(256))
+    change_password = Column(Boolean, default=True)
+    last_access_date = Column(DateTime)
+    user_status = Column(Enum(UserStatus), default=UserStatus.ACTIVE)
+    web_access = Column(Boolean, default=True)
+    created_at = Column(DateTime, server_default=func.now())
+    updated_at = Column(DateTime, onupdate=func.now())
     avatar = Column(String(300))
-    ingresos_fallidos = Column(Integer)
-    departamento = Column(String(100))
+    failed_login_attempts = Column(Integer)
