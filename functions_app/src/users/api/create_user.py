@@ -1,9 +1,12 @@
 from datetime import datetime
-from fastapi import APIRouter, Depends, HTTPException
-from functions_app.schemas.users.base import UserCreate, UserRead
+from fastapi import APIRouter, Depends
+from sqlalchemy import or_
+from functions_app.core.decoradores.timing import timing_decorator
+from functions_app.utils.exceptions import CustomException
+from functions_app.schemas.users.base import UserCreate
 from functions_app.models.users import User
 from functions_app.src.auth.services import hash_password, generate_secure_password
-from functions_app.src.users.constants import UserStatus, BoolStateYesOrNo
+from functions_app.src.users.constants import UserStatus
 from functions_app.database.session import get_db
 from functions_app.schemas.users.response import CreateGetOrUpdateUserResponse
 #from kanri_app.modules.auth.endpoints.get_token import get_current_active_user
@@ -17,24 +20,32 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
+@timing_decorator
 @router.post(path="/users",
              summary="Crear Usuario",
-             description="Crea usuario en los registros del sistema",
-             response_model=CreateGetOrUpdateUserResponse)
+             description="Crea usuario en los registros del sistema")
 async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUserResponse:
-    if not valida_existencia_usuario(user, db):
-        db_user = create_user(db, user)
-        # TODO enviar un email al correo de usuario registrado, con la clave predeterminada para que la actualice
-        # template armarlo con jinja, y ver como enviar correos y guardar registros de estos.
-        return CreateGetOrUpdateUserResponse(mensaje="Usuario ha sido creado exitosamente.",
-                                             usuario=db_user)
-    else:
-        return CreateGetOrUpdateUserResponse(mensaje="Error al crear el usuario.",
-                                             codigo=409,
-                                             estado="Error")
+    if valida_existencia_usuario(user, db):
+        raise CustomException(
+            name="UsuarioExistente",
+            message="El usuario ya existe en nuestros registros.",
+            status_code=409
+        )
+    db_user = create_user(user)
+    try:
+        db.add(db_user)
+        db.commit()
+        db.refresh(db_user)
+        return CreateGetOrUpdateUserResponse(
+            usuario=db_user
+        )
+
+    except SQLAlchemyError as e:
+        logger.error(f"Error al crear usuario: {e}")
+        raise CustomException(name="ErrorUsuario", message="Hubo un problema al crear el usuario.", status_code=409)
 
 
-def create_user(db: Session, user: UserCreate) -> UserRead:
+def create_user(user: UserCreate) -> User:
     secure_password = generate_secure_password()
     logger.info(f"Contraseña creada: {secure_password}")
     hashed_password = hash_password(secure_password)
@@ -48,28 +59,21 @@ def create_user(db: Session, user: UserCreate) -> UserRead:
             phone_number=user.phone_number,
             phone_number_alternative=user.phone_number_alternative if user.phone_number_alternative else None,
             avatar=user.avatar if user.avatar else None,
-            change_password=BoolStateYesOrNo.NO.value,  # Se deja en NO, por ahora hasta implementar correo y vista
+            change_password=False,  # Se deja en NO, por ahora hasta implementar correo y vista
             created_at=datetime.now(),
             failed_login_attempts=0,
-            user_status=UserStatus.ACTIVE,
-            web_access=BoolStateYesOrNo.YES.value,
+            user_status=UserStatus.ACTIVE.value,
+            web_access=True,
             password=hashed_password
         )
-        db.add(db_user)
-        db.commit()
-        db.refresh(db_user)
-        return db_user
-
-    except SQLAlchemyError as e:
-        logger.error(f"Error al crears usuario: {e}")
-        raise HTTPException(
-            status_code=500,
-            detail="Ocurrió un error interno al procesar la solicitud."
-        )
+    except Exception as e:
+        logger.error(f"Error al crear usuario: {e}")
+        raise CustomException(name="Error", message=f"Error con un dato: {e}", status_code=409)
+    return db_user
 
 
-def valida_existencia_usuario(user: UserCreate, db: Session):
+def valida_existencia_usuario(user: UserCreate, db: Session) -> bool:
     rut_formateado = user.dni.replace(".", "")
-    user = db.query(User).filter(User.dni == rut_formateado or User.email == user.email).first()
-    exist = True if user else False
-    return exist
+    email = user.email
+    user_found = db.query(User).filter(or_(User.dni == rut_formateado, User.email == email)).first()
+    return user_found is not None

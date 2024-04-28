@@ -1,9 +1,13 @@
-from pydantic import BaseModel
 from datetime import datetime
+from pydantic import BaseModel, validator
+from typing import Generic, TypeVar, Optional
+from pydantic.generics import GenericModel
+
+T = TypeVar('T')
 
 
 class StandardResponse(BaseModel):
-    mensaje: str = "Se ha ejecutado."
-    estado: str = "OK"
-    codigo: int = 200
-    fecha: datetime = datetime.now()
+    message: str = "Operación exitosa."
+    state: str = "OK"
+    statusCode: int = 200
+    date: datetime = datetime.now().isoformat()

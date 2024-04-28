@@ -17,7 +17,7 @@ class User(Base):
     password = Column(String(256))
     change_password = Column(Boolean, default=True)
     last_access_date = Column(DateTime)
-    user_status = Column(Enum(UserStatus), default=UserStatus.ACTIVE)
+    user_status = Column(Enum(UserStatus))
     web_access = Column(Boolean, default=True)
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, onupdate=func.now())

@@ -1,6 +1,10 @@
 from typing import Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
+from sqlalchemy import Enum
+
+from functions_app.src.users.constants import UserStatus
+from functions_app.utils.to_camel_models import to_camel
 
 
 class UserCreate(BaseModel):
@@ -27,8 +31,9 @@ class UserCreate(BaseModel):
                         description="Correo electrónico del usuario.")
     phone_number: str = Field(...,
                        example="999999999",
-                       description="Numero Telefono Usuario.")
-    phone_number_alternative: Optional[str] = Field(None,
+                       description="Numero Telefono Usuario.",
+                       alias="phoneNumber")
+    phoneNumberAlternative: Optional[str] = Field(None,
                        example="999999999",
                        description="Numero Alternativo Usuario.")
     avatar: Optional[str] = Field(None,
@@ -44,6 +49,8 @@ class UserCreate(BaseModel):
 
     class Config:
         from_attributes = True
+        alias_generator = to_camel
+        allow_population_by_field_name = True
 
 
 class UserUpdate(UserCreate):
@@ -53,38 +60,43 @@ class UserUpdate(UserCreate):
                        min_length=8,
                        max_length=256
                        )
-    web_access: str = Field(None,
+    webAccess: bool = Field(None,
                             example="Y",
                             description="Indica si el usuario tiene acceso web. 'Y' para Sí, 'N' para No."
                             )
 
 
 class UserRead(UserCreate):
-    user_id: str = Field(...,
+    userId: str = Field(...,
                             example="fj32j-32daa-323dvsds-323dsa",
                             description="Identificador único del usuario registrado"
                             )
-    change_password: str = Field(None,
+    changePassword: bool = Field(None,
                                example="N",
                                description="Indica si el usuario debe cambiar la contraseña en el próximo ingreso. 'Y' para Sí, 'N' para No."
                                )
-    last_access_date: Optional[datetime] = Field(None,
+    lastAccessDate: Optional[datetime] = Field(None,
                                                description="Fecha y hora del último ingreso del usuario al sistema."
                                                )
-    user_status: int = Field(None,
-                                example=1,
-                                description="Estado del usuario. Por ejemplo, 1 para 'Habilitado', 2 para 'Deshabilitado'."
-                                )
-    created_at: datetime = Field(...,
+    userStatus: UserStatus = Field(None,
+                                          example=1,
+                                          description="Estado del usuario. Por ejemplo, 1 para 'Habilitado', 2 para 'Deshabilitado'."
+                                          )
+    createdAt: datetime = Field(...,
                                 description="Fecha y hora de creación del usuario en el sistema."
                                 )
-    modification_date: Optional[datetime] = Field(None,
+    updatedAt: Optional[datetime] = Field(None,
                                                    description="Fecha y hora de la última modificación realizada en los datos del usuario."
                                                    )
-    failed_login_attempts: int = Field(None,
+    failedLoginAttempts: int = Field(None,
                                    example=3,
                                    description="Número de intentos fallidos de ingreso al sistema."
                                    )
+
+    class Config:
+        from_attributes = True
+        alias_generator = to_camel
+        allow_population_by_field_name = True
 
 
 class UserDB(UserRead):
@@ -94,7 +106,7 @@ class UserDB(UserRead):
                        min_length=8,
                        max_length=256
                        )
-    web_access: str = Field(None,
+    webAccess: bool = Field(None,
                             example="Y",
                             description="Indica si el usuario tiene acceso web. 'Y' para Sí, 'N' para No."
                             )
