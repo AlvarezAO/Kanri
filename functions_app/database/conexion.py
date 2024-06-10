@@ -31,10 +31,10 @@ USER_RDS = SECRET['username']
 PASS_RDS = SECRET['password']
 DB_NAME_RDS = "kanri_desarrollo"'''
 
-HOST_RDS = "172.19.176.1:3306"
+HOST_RDS = "192.168.1.93:3306"
 USER_RDS = "kanri_admin"
 PASS_RDS = "bo#M=H0;z7$>PSn901Bj"
-DB_NAME_RDS = "kanri_db"
+DB_NAME_RDS = "kanri_database"
 
 DATABASE_URL = f"mysql+pymysql://{USER_RDS}:{PASS_RDS}@{HOST_RDS}/{DB_NAME_RDS}?charset=utf8mb4"
 

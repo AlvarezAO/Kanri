@@ -21,9 +21,7 @@ router = APIRouter()
 
 
 @timing_decorator
-@router.post(path="/users",
-             summary="Crear Usuario",
-             description="Crea usuario en los registros del sistema")
+@router.post(path="/users", summary="Crear Usuario", description="Crea usuario en los registros del sistema")
 async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUserResponse:
     if valida_existencia_usuario(user, db):
         raise CustomException(
@@ -39,7 +37,6 @@ async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUs
         return CreateGetOrUpdateUserResponse(
             usuario=db_user
         )
-
     except SQLAlchemyError as e:
         logger.error(f"Error al crear usuario: {e}")
         raise CustomException(name="ErrorUsuario", message="Hubo un problema al crear el usuario.", status_code=409)
@@ -51,25 +48,25 @@ def create_user(user: UserCreate) -> User:
     hashed_password = hash_password(secure_password)
     try:
         db_user = User(
-            user_id=str(uuid4()),
+            userId=str(uuid4()),
             name=user.name,
             alias=user.alias,
             dni=user.dni,
             email=user.email,
-            phone_number=user.phone_number,
-            phone_number_alternative=user.phone_number_alternative if user.phone_number_alternative else None,
+            phoneNumber=user.phoneNumber,
+            phoneNumberAlternative=user.phoneNumberAlternative if user.phoneNumberAlternative else None,
             avatar=user.avatar if user.avatar else None,
-            change_password=False,  # Se deja en NO, por ahora hasta implementar correo y vista
-            created_at=datetime.now(),
-            failed_login_attempts=0,
-            user_status=UserStatus.ACTIVE.value,
-            web_access=True,
+            changePassword=False,  # Se deja en NO, por ahora hasta implementar correo y vista
+            createdAt=datetime.now(),
+            failedLoginAttempts=0,
+            userStatus=UserStatus.ACTIVE.value,
+            webAccess=True,
             password=hashed_password
         )
+        return db_user
     except Exception as e:
         logger.error(f"Error al crear usuario: {e}")
         raise CustomException(name="Error", message=f"Error con un dato: {e}", status_code=409)
-    return db_user
 
 
 def valida_existencia_usuario(user: UserCreate, db: Session) -> bool:
