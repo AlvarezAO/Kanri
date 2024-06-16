@@ -21,7 +21,7 @@ router = APIRouter()
 
 
 @timing_decorator
-@router.post(path="/users", summary="Crear Usuario", description="Crea usuario en los registros del sistema")
+@router.post(path="/user", summary="Crear Usuario", description="Crea usuario en los registros del sistema")
 async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUserResponse:
     if valida_existencia_usuario(user, db):
         raise CustomException(

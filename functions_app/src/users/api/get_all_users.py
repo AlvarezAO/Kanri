@@ -17,7 +17,7 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get(path="/users", summary="Listar Usuarios Registrados",
+@router.get(path="/user", summary="Listar Usuarios Registrados",
             description="Obtiene un listado de todos los usuarios registrados y habilitados, con su información.",
             response_model=GetAllUsersResponse)
 async def get_users(
