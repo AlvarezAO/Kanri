@@ -1,17 +1,17 @@
 from datetime import datetime
 from fastapi import APIRouter, Depends
 from sqlalchemy import or_
-from functions_app.core.decoradores.timing import timing_decorator
-from functions_app.utils.exceptions import CustomException
-from functions_app.schemas.users.base import UserCreate
-from functions_app.models.users import User
-from functions_app.src.auth.services import hash_password, generate_secure_password
-from functions_app.src.users.constants import UserStatus
-from functions_app.database.session import get_db
-from functions_app.schemas.users.response import CreateGetOrUpdateUserResponse
+from app.services.decoradores.timing import timing_decorator
+from app.utils.exceptions import CustomException
+from app.models.schemas.users.base import UserCreate
+from app.models.domain.users import User
+from app.src.auth.services import hash_password, generate_secure_password
+from app.services.constants.user_status import UserStatus
+from app.database.session import get_db
+from app.models.schemas.users.response import CreateGetOrUpdateUserResponse
 #from kanri_app.modules.auth.endpoints.get_token import get_current_active_user
 from sqlalchemy.exc import SQLAlchemyError
-from functions_app.utils.logger import get_logger
+from app.utils.logger import get_logger
 from sqlalchemy.orm import Session
 from uuid import uuid4
 

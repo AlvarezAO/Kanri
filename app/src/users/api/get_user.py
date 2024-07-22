@@ -1,9 +1,9 @@
-from functions_app.utils.exceptions import CustomException
-from functions_app.utils.logger import get_logger
+from app.utils.exceptions import CustomException
+from app.utils.logger import get_logger
 from fastapi import APIRouter,Depends
-from functions_app.schemas.users.response import CreateGetOrUpdateUserResponse
-from functions_app.database.session import get_db
-from functions_app.models.users import User
+from app.models.schemas.users.response import CreateGetOrUpdateUserResponse
+from app.database.session import get_db
+from app.models.domain.users import User
 from fastapi import Path
 logger = get_logger(__name__)
 router = APIRouter()

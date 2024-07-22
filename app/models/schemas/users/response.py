@@ -1,6 +1,6 @@
 from typing import List
-from functions_app.schemas.base_response import StandardResponse
-from functions_app.schemas.users.base import UserRead
+from app.models.schemas.base_response import StandardResponse
+from app.models.schemas.users.base import UserRead
 
 
 class GetAllUsersResponse(StandardResponse):

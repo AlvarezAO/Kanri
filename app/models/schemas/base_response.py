@@ -6,7 +6,7 @@ T = TypeVar('T')
 
 
 class StandardResponse(BaseModel):
-    message: str = "Operación exitosa."
-    state: str = "OK"
-    statusCode: int = 200
-    date: datetime = datetime.now().isoformat()
+    mensaje: str = "Operación exitosa."
+    estado: str = "OK"
+    codigo: int = 200
+    fecha: datetime = datetime.now().isoformat()

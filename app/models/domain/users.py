@@ -1,7 +1,7 @@
 from sqlalchemy import Column, String, Integer, DateTime, Boolean, func
-from functions_app.database.session import Base
+from app.database.session import Base
 from sqlalchemy.types import Enum
-from functions_app.src.users.constants import UserStatus
+from app.services.constants.user_status import UserStatus
 
 
 class User(Base):

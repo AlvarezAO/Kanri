@@ -1,15 +1,16 @@
 from typing import Optional
-from fastapi import APIRouter, Depends, HTTPException, Query
-from functions_app.models.users import User
-from functions_app.database.session import get_db
-from functions_app.src.users.api import ALLOWED_FILTER_FIELDS
-from functions_app.src.users.constants import UserStatus
-from functions_app.utils.filters import apply_filters, apply_order
-from functions_app.utils.pagination import apply_pagination, calcular_total_paginas
-from functions_app.schemas.users.response import GetAllUsersResponse
+from fastapi import APIRouter, Depends, Query
+
+from app.models.domain.users import User
+from app.database.session import get_db
+from app.src.users.api import ALLOWED_FILTER_FIELDS
+from app.services.constants.user_status import UserStatus
+from app.utils.filters import apply_filters, apply_order
+from app.utils.pagination import apply_pagination, calcular_total_paginas
+from app.models.schemas.users.response import GetAllUsersResponse
 from sqlalchemy.exc import SQLAlchemyError
-from functions_app.utils.logger import get_logger
-from functions_app.utils.exceptions import CustomException
+from app.utils.logger import get_logger
+from app.utils.exceptions import CustomException
 
 #from kanri_app.modules.auth.endpoints.get_token import get_current_active_user
 
@@ -17,9 +18,12 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get(path="/user", summary="Listar Usuarios Registrados",
-            description="Obtiene un listado de todos los usuarios registrados y habilitados, con su información.",
-            response_model=GetAllUsersResponse)
+@router.get(
+    path="/user",
+    summary="Listar Usuarios Registrados",
+    description="Obtiene un listado de todos los usuarios registrados y habilitados, con su información.",
+    response_model=GetAllUsersResponse
+)
 async def get_users(
     db=Depends(get_db),
     filters: Optional[str] = Query(None),
@@ -47,6 +51,10 @@ async def get_users(
         )
     except SQLAlchemyError as e:
         logger.error(f"Error al obtener usuarios: {e}")
-        raise CustomException(name="ErrorListarUsuarios", message="Hubo un problema al listar los usuarios.", status_code=409)
+        raise (CustomException
+               (name="ErrorListarUsuarios",
+                message="Hubo un problema al listar los usuarios.",
+                status_code=409)
+               )
 
     return response

@@ -5,11 +5,11 @@ from fastapi import FastAPI
 from mangum import Mangum
 from starlette.middleware.base import BaseHTTPMiddleware
 from starlette.responses import JSONResponse
-from functions_app.api.v1.main_router import router as api_router
+from app.api.v1.main_router import router as api_router
 from datetime import datetime
 import time
-from functions_app.utils.logger import get_logger
-from functions_app.utils.exceptions import CustomException
+from app.utils.logger import get_logger
+from app.utils.exceptions import CustomException
 logger = get_logger(__name__)
 app = FastAPI(
     title="Kanri Project API",
@@ -23,12 +23,25 @@ app = FastAPI(
 async def custom_error_handler(request: Request, call_next):
     start_time = time.time()
     try:
-        response = await call_next(request)
+        response: Response = await call_next(request)
         process_time = time.time() - start_time
-        response.headers["X-Process-Time"] = str(process_time)
+        formatted_process_time = "{:.3f}".format(process_time)
+
+        # Verifica si la respuesta es de tipo JSON
+        if response.media_type == "application/json":
+            content = await response.body()
+            content = json.loads(content)
+            content["process_time"] = formatted_process_time
+            content["date"] = datetime.now().isoformat()
+            return JSONResponse(status_code=response.status_code, content=content)
+
+        # Para otros tipos de respuesta, simplemente añade el encabezado
+        response.headers["X-Process-Time"] = str(formatted_process_time)
         return response
+
     except CustomException as e:
         process_time = time.time() - start_time
+        formatted_process_time = "{:.3f}".format(process_time)
         return JSONResponse(
             status_code=e.status_code,
             content={
@@ -37,21 +50,14 @@ async def custom_error_handler(request: Request, call_next):
                 "status_code": e.status_code,
                 "date": datetime.now().isoformat(),
                 "error_name": e.name,
-                "process_time": process_time,
+                "process_time": formatted_process_time,
             },
         )
-
-
-class ProcessTimeMiddleware(BaseHTTPMiddleware):
-    async def dispatch(self, request: Request, call_next):
-        start_time = time.time()
-        response: Response = await call_next(request)
+    finally:
         process_time = time.time() - start_time
-        print(f"Tiempo de procesamiento: {process_time} segundos")
-        response.headers["X-Process-Time"] = str(process_time)
-        return response
+        formatted_process_time = "{:.3f}".format(process_time)
+        logger.info(f"Tiempo de procesamiento: {formatted_process_time} segundos")
 
 
 app.include_router(api_router, prefix="/v1")
-app.add_middleware(ProcessTimeMiddleware)
 handler = Mangum(app)

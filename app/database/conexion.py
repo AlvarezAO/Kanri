@@ -31,7 +31,7 @@ USER_RDS = SECRET['username']
 PASS_RDS = SECRET['password']
 DB_NAME_RDS = "kanri_desarrollo"'''
 
-HOST_RDS = "192.168.1.93:3306"
+HOST_RDS = "192.168.1.91:3306"
 USER_RDS = "kanri_admin"
 PASS_RDS = "bo#M=H0;z7$>PSn901Bj"
 DB_NAME_RDS = "kanri_database"

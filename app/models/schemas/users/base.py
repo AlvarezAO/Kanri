@@ -1,7 +1,7 @@
 from typing import Optional
 from pydantic import BaseModel, Field
 from datetime import datetime
-from functions_app.src.users.constants import UserStatus
+from app.services.constants.user_status import UserStatus
 
 
 class UserCreate(BaseModel):
