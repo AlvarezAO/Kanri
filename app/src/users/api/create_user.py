@@ -9,7 +9,7 @@ from app.src.auth.services import hash_password, generate_secure_password
 from app.services.constants.user_status import UserStatus
 from app.database.session import get_db
 from app.models.schemas.users.response import CreateGetOrUpdateUserResponse
-#from kanri_app.modules.auth.endpoints.get_token import get_current_active_user
+from app.services.security.auth import AuthHandler
 from sqlalchemy.exc import SQLAlchemyError
 from app.utils.logger import get_logger
 from sqlalchemy.orm import Session
@@ -18,25 +18,20 @@ from uuid import uuid4
 logger = get_logger(__name__)
 
 router = APIRouter()
+auth = AuthHandler()
 
 
 @timing_decorator
 @router.post(path="/user", summary="Crear Usuario", description="Crea usuario en los registros del sistema")
 async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUserResponse:
     if valida_existencia_usuario(user, db):
-        raise CustomException(
-            name="UsuarioExistente",
-            message="El usuario ya existe en nuestros registros.",
-            status_code=409
-        )
+        raise CustomException(name="UsuarioExistente", message="El usuario ya existe en nuestros registros.", status_code=409)
     db_user = create_user(user)
     try:
         db.add(db_user)
         db.commit()
         db.refresh(db_user)
-        return CreateGetOrUpdateUserResponse(
-            usuario=db_user
-        )
+        return CreateGetOrUpdateUserResponse(usuario=db_user)
     except SQLAlchemyError as e:
         logger.error(f"Error al crear usuario: {e}")
         raise CustomException(name="ErrorUsuario", message="Hubo un problema al crear el usuario.", status_code=409)
@@ -45,7 +40,7 @@ async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUs
 def create_user(user: UserCreate) -> User:
     secure_password = generate_secure_password()
     logger.info(f"Contraseña creada: {secure_password}")
-    hashed_password = hash_password(secure_password)
+    hashed_password = auth.get_password_hash(secure_password)
     try:
         db_user = User(
             userId=str(uuid4()),

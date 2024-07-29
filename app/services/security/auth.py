@@ -6,16 +6,18 @@ from typing import Optional
 from app.models.schemas.token.base import SECRET_KEY, ALGORITHM
 from fastapi.security import HTTPAuthorizationCredentials, HTTPBearer
 from fastapi import Security
+from app.models.domain.users import User
+from sqlalchemy.orm import Session
 
 
 class AuthHandler:
     security = HTTPBearer()
     pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
 
-    async def verify_password(self, plain_password, hashed_password):
+    def verify_password(self, plain_password, hashed_password):
         return self.pwd_context.verify(plain_password, hashed_password)
 
-    async def get_password_hash(self, password):
+    def get_password_hash(self, password):
         return self.pwd_context.hash(password)
 
     async def create_access_token(self, data: dict, expires_delta: Optional[timedelta] = None):
@@ -28,23 +30,24 @@ class AuthHandler:
         encoded_jwt = jwt.encode(to_encode, SECRET_KEY, algorithm=ALGORITHM)
         return encoded_jwt
 
-    async def get_user(self, username: str):
-        user = next((user for user in fake_users_db if user.username == username), None)
+    async def get_user(self, username: str, db: Session):
+        user: User = db.query(User).filter(User.dni == username).first()
         return user
 
-    async def authenticate_user(self, username: str, password: str):
-        user = await self.get_user(username)
+    async def authenticate_user(self, username: str, password: str, db: Session):
+        user = await self.get_user(username, db)
         if not user:
             return False
-        if not await self.verify_password(password, user.hashed_password):
+        if not self.verify_password(password, user.password):
             return False
         return user
 
     async def blocklist_token(self, token):
-        blocklist_token.append(token)
+        #blocklist_token.append(token)
+        return
 
     async def istokenblock(self, token):
-        return token in blocklist_token
+        return #token in blocklist_token
 
     async def auth_wrapper(self, auth: HTTPAuthorizationCredentials = Security(security)):
         token = auth.credentials

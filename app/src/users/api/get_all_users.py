@@ -3,6 +3,7 @@ from fastapi import APIRouter, Depends, Query
 
 from app.models.domain.users import User
 from app.database.session import get_db
+from app.services.decoradores.validador_permisos import require_permission
 from app.src.users.api import ALLOWED_FILTER_FIELDS
 from app.services.constants.user_status import UserStatus
 from app.utils.filters import apply_filters, apply_order
@@ -11,9 +12,7 @@ from app.models.schemas.users.response import GetAllUsersResponse
 from sqlalchemy.exc import SQLAlchemyError
 from app.utils.logger import get_logger
 from app.utils.exceptions import CustomException
-
-#from kanri_app.modules.auth.endpoints.get_token import get_current_active_user
-
+from app.src.auth.services import oauth2_scheme
 logger = get_logger(__name__)
 router = APIRouter()
 
@@ -24,14 +23,15 @@ router = APIRouter()
     description="Obtiene un listado de todos los usuarios registrados y habilitados, con su información.",
     response_model=GetAllUsersResponse
 )
+@require_permission("view_users")
 async def get_users(
-    db=Depends(get_db),
-    filters: Optional[str] = Query(None),
-    items_by_page: Optional[int] = Query(10, gt=0),
-    page: Optional[int] = Query(1, gt=0),
-    order: Optional[str] = Query(None, example="nombre,asc")
-    ):
-    
+        token: str = Depends(oauth2_scheme),
+        db=Depends(get_db),
+        filters: Optional[str] = Query(None),
+        items_by_page: Optional[int] = Query(10, gt=0),
+        page: Optional[int] = Query(1, gt=0),
+        order: Optional[str] = Query(None, example="nombre,asc")
+):
     try:
         query = db.query(User).filter(User.userStatus == UserStatus.ACTIVE.value)
         allowed_fields = ALLOWED_FILTER_FIELDS.get('User', [])

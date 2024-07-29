@@ -11,7 +11,7 @@ from app.models.domain.users import User
 from app.models.schemas.token.base import TokenData, SECRET_KEY, ALGORITHM
 from fastapi.security import OAuth2PasswordBearer
 
-oauth2_scheme = OAuth2PasswordBearer(tokenUrl="token")
+oauth2_scheme = OAuth2PasswordBearer("/login")
 
 
 def hash_password(password: str) -> str:
