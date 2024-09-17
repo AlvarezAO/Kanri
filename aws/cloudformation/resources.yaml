@@ -1,0 +1,335 @@
+AWSTemplateFormatVersion: '2010-09-09'
+Description: Plantilla para crear una VPC con subredes publicas y privadas, RDS, Lambda y API Gateway.
+
+Parameters:
+  Environment:
+    Type: String
+    Description: "Selecciona el ambiente de despliegue"
+    AllowedValues:
+      - development
+      - staging
+      - production
+    Default: development
+
+Resources:
+  # VPC
+  KanriVPC:
+    Type: AWS::EC2::VPC
+    Properties:
+      CidrBlock: 10.0.0.0/16
+      EnableDnsSupport: true
+      EnableDnsHostnames: true
+      Tags:
+        - Key: Name
+          Value: Kanri-VPC
+
+  # Subnet Pública
+  PublicSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref KanriVPC
+      CidrBlock: 10.0.1.0/24
+      MapPublicIpOnLaunch: true
+      AvailabilityZone: us-east-1a
+      Tags:
+        - Key: Name
+          Value: Public-Subnet
+
+  # Subnet Privada
+  PrivateSubnet:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref KanriVPC
+      CidrBlock: 10.0.2.0/24
+      AvailabilityZone: us-east-1aaunque 
+      Tags:
+        - Key: Name
+          Value: Private-Subnet
+
+  # Subnet Privada 2
+  PrivateSubnet2:
+    Type: AWS::EC2::Subnet
+    Properties:
+      VpcId: !Ref KanriVPC
+      CidrBlock: 10.0.3.0/24
+      AvailabilityZone: us-east-1b
+      Tags:
+        - Key: Name
+          Value: Private-Subnet-2
+
+  # Internet Gateway
+  InternetGateway:
+    Type: AWS::EC2::InternetGateway
+    Properties:
+      Tags:
+        - Key: Name
+          Value: Kanri-IGW
+
+  # Attachment de Internet Gateway a la VPC
+  AttachGateway:
+    Type: AWS::EC2::VPCGatewayAttachment
+    Properties:
+      VpcId: !Ref KanriVPC
+      InternetGatewayId: !Ref InternetGateway
+
+  # Route Table para la Subnet Pública
+  PublicRouteTable:
+    Type: AWS::EC2::RouteTable
+    Properties:
+      VpcId: !Ref KanriVPC
+      Tags:
+        - Key: Name
+          Value: Public-Route-Table
+
+  # Route a Internet
+  PublicRoute:
+    Type: AWS::EC2::Route
+    DependsOn: AttachGateway
+    Properties:
+      RouteTableId: !Ref PublicRouteTable
+      DestinationCidrBlock: 0.0.0.0/0
+      GatewayId: !Ref InternetGateway
+
+  # Asociación de la Route Table Pública a la Subnet Pública
+  PublicSubnetRouteTableAssociation:
+    Type: AWS::EC2::SubnetRouteTableAssociation
+    Properties:
+      SubnetId: !Ref PublicSubnet
+      RouteTableId: !Ref PublicRouteTable
+
+  # Security Group para la Subnet Privada (RDS)
+  PrivateSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to RDS in the private subnet
+      VpcId: !Ref KanriVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 3306
+          ToPort: 3306
+          CidrIp: 10.0.1.0/24  # Permitir acceso desde la subnet pública
+      Tags:
+        - Key: Name
+          Value: Private-SG
+
+  # Security Group para la Subnet Pública (Lambda, API Gateway)
+  PublicSecurityGroup:
+    Type: AWS::EC2::SecurityGroup
+    Properties:
+      GroupDescription: Access to resources in the public subnet
+      VpcId: !Ref KanriVPC
+      SecurityGroupIngress:
+        - IpProtocol: tcp
+          FromPort: 80
+          ToPort: 80
+          CidrIp: 0.0.0.0/0
+        - IpProtocol: tcp
+          FromPort: 443
+          ToPort: 443
+          CidrIp: 0.0.0.0/0
+      Tags:
+        - Key: Name
+          Value: Public-SG
+
+  # RDS en la Subnet Privada
+  MyRDSInstance:
+    Type: AWS::RDS::DBInstance
+    Properties:
+      DBInstanceIdentifier: Konning
+      DBInstanceClass: db.t3.micro
+      AllocatedStorage: 20
+      Engine: MySQL
+      MasterUsername: admin
+      MasterUserPassword: 198711*_Aa
+      DBName: kanri_desarrollo
+      DBSubnetGroupName:
+        Ref: MyDBSubnetGroup
+      VPCSecurityGroups:
+        - !Ref PrivateSecurityGroup
+      PubliclyAccessible: false
+      MultiAZ: false
+
+  MyDBSubnetGroup:
+    Type: AWS::RDS::DBSubnetGroup
+    Properties:
+      DBSubnetGroupDescription: Subnet group for RDS
+      SubnetIds:
+        - !Ref PrivateSubnet
+        - !Ref PrivateSubnet2
+      DBSubnetGroupName: MyDBSubnetGroup
+
+# IAM Role para Lambda
+  KanriLambdaExecutionRole:
+    Type: AWS::IAM::Role
+    Properties:
+      RoleName: KanriLambdaExecutionRole
+      AssumeRolePolicyDocument:
+        Version: '2012-10-17'
+        Statement:
+          - Effect: Allow
+            Principal:
+              Service: lambda.amazonaws.com
+            Action: sts:AssumeRole
+      Policies:
+        - PolicyName: LambdaExecutionPolicy
+          PolicyDocument:
+            Version: '2012-10-17'
+            Statement:
+              - Effect: Allow
+                Action:
+                  - logs:CreateLogGroup
+                  - logs:CreateLogStream
+                  - logs:PutLogEvents
+                Resource: arn:aws:logs:*:*:*
+              - Effect: Allow
+                Action:
+                  - s3:GetObject
+                  - s3:PutObject
+                Resource: arn:aws:s3:::kanri-project-cl/*
+              - Effect: Allow
+                Action:
+                  - ec2:CreateNetworkInterface
+                  - ec2:DescribeNetworkInterfaces
+                  - ec2:DeleteNetworkInterface
+                Resource: "*"
+      ManagedPolicyArns:
+        - arn:aws:iam::aws:policy/service-role/AWSLambdaBasicExecutionRole
+
+  # Lambda Function en la Subnet Pública
+  KanriLambdaFunction:
+    Type: AWS::Lambda::Function
+    Properties:
+      FunctionName: KanriLambda
+      Handler: app.main.handler
+      Role: !GetAtt KanriLambdaExecutionRole.Arn
+      Code:
+        S3Bucket: kanri-project-cl
+        S3Key: kanri-code.zip
+      Runtime: python3.11
+      VpcConfig:
+        SubnetIds:
+          - !Ref PublicSubnet
+        SecurityGroupIds:
+          - !Ref PublicSecurityGroup
+      Environment:
+        Variables:
+          ENV: !Ref Environment
+
+  # Version de la Lambda
+  LambdaVersion:
+    Type: AWS::Lambda::Version
+    Properties:
+      FunctionName: !Ref KanriLambdaFunction
+
+  # Alias para Lambda en el Ambiente Development
+  LambdaAliasDevelopment:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref KanriLambdaFunction
+      FunctionVersion: !GetAtt LambdaVersion.Version
+      Name: development
+
+  # Alias para Lambda en el Ambiente Staging
+  LambdaAliasStaging:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref KanriLambdaFunction
+      FunctionVersion: !GetAtt LambdaVersion.Version
+      Name: staging
+
+  # Alias para Lambda en el Ambiente Production
+  LambdaAliasProduction:
+    Type: AWS::Lambda::Alias
+    Properties:
+      FunctionName: !Ref KanriLambdaFunction
+      FunctionVersion: !GetAtt LambdaVersion.Version
+      Name: production
+
+  # API Gateway
+  MyApiGateway:
+    Type: AWS::ApiGateway::RestApi
+    Properties:
+      Name: !Sub "MyAPI-${Environment}"
+
+  MyApiGatewayResource:
+    Type: AWS::ApiGateway::Resource
+    Properties:
+      ParentId: !GetAtt MyApiGateway.RootResourceId
+      PathPart: myresource
+      RestApiId: !Ref MyApiGateway
+
+  MyApiGatewayMethod:
+    Type: AWS::ApiGateway::Method
+    Properties:
+      AuthorizationType: NONE
+      HttpMethod: GET
+      ResourceId: !Ref MyApiGatewayResource
+      RestApiId: !Ref MyApiGateway
+      Integration:
+        IntegrationHttpMethod: POST
+        Type: AWS_PROXY
+        Uri: !Sub arn:aws:apigateway:${AWS::Region}:lambda:path/2015-03-31/functions/${KanriLambdaFunction.Arn}/invocations
+
+  # API Gateway Deployment
+  MyApiGatewayDeployment:
+    Type: AWS::ApiGateway::Deployment
+    DependsOn: MyApiGatewayMethod
+    Properties:
+      RestApiId: !Ref MyApiGateway
+      StageName: !Ref Environment
+
+  # Stage para el ambiente Development
+  ApiGatewayStageDev:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: dev
+      RestApiId: !Ref MyApiGateway
+      DeploymentId: !Ref MyApiGatewayDeployment
+      MethodSettings:
+        - DataTraceEnabled: true
+          HttpMethod: "*"
+          ResourcePath: "/*"
+          MetricsEnabled: true
+
+  # Stage para el ambiente Staging
+  ApiGatewayStageStaging:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: staging
+      RestApiId: !Ref MyApiGateway
+      DeploymentId: !Ref MyApiGatewayDeployment
+      MethodSettings:
+        - DataTraceEnabled: true
+          HttpMethod: "*"
+          ResourcePath: "/*"
+          MetricsEnabled: true
+
+  # Stage para el ambiente Production
+  ApiGatewayStageProd:
+    Type: AWS::ApiGateway::Stage
+    Properties:
+      StageName: prod
+      RestApiId: !Ref MyApiGateway
+      DeploymentId: !Ref MyApiGatewayDeployment
+      MethodSettings:
+        - DataTraceEnabled: true
+          HttpMethod: "*"
+          ResourcePath: "/*"
+          MetricsEnabled: true
+
+Outputs:
+  VPCId:
+    Value: !Ref KanriVPC
+    Description: "VPC Id"
+
+  LambdaFunctionArn:
+    Value: !GetAtt KanriLambdaFunction.Arn
+    Description: "ARN de la función Lambda"
+
+  ApiGatewayInvokeURL:
+    Value: !Sub "https://${MyApiGateway}.execute-api.${AWS::Region}.amazonaws.com/"
+    Description: "URL de invocación de API Gateway"
+
+  RDSInstanceEndpoint:
+    Value: !GetAtt MyRDSInstance.Endpoint.Address
+    Description: "RDS Endpoint"
