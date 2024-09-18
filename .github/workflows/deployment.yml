@@ -34,8 +34,9 @@ jobs:
 
     - name: Upload code to S3
       run: |
-        zip -r lambda_function.zip .
-        aws s3 cp lambda_function.zip s3://kanri-project-cl/kanri-code-${{ github.ref_name }}.zip
+        zip -r kanri_function.zip app/
+        echo "Uploading kanri_function.zip to S3 with ref name: ${{ github.ref_name }}..."
+        aws s3 cp kanri_function.zip s3://kanri-project-cl/kanri-code-${{ github.ref_name }}.zip
 
     - name: Deploy to Lambda
       run: |
