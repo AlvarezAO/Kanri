@@ -46,11 +46,24 @@ jobs:
           --s3-key kanri-code-${{ github.ref_name }}.zip
 
     - name: Wait for Lambda Update to Complete
-      run: sleep 10
+      run: sleep 20
 
     - name: Update Lambda alias
       run: |
         FUNCTION_VERSION=$(aws lambda publish-version --function-name KanriLambda --query Version --output text)
+        if [[ "${{ github.ref_name }}" == "main" ]]; then
+          ALIAS="production"
+        elif [[ "${{ github.ref_name }}" == "staging" ]]; then
+          ALIAS="staging"
+        elif [[ "${{ github.ref_name }}" == "develop" ]]; then
+          ALIAS="development"
+        else
+          echo "Branch not recognized. Exiting."
+          exit 1
+        fi
+
+        echo "Updating alias: $ALIAS to function version: $FUNCTION_VERSION"
+    
         aws lambda update-alias \
           --function-name KanriLambda \
           --name ${{ github.ref_name }} \
