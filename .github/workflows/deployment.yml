@@ -51,6 +51,7 @@ jobs:
     - name: Update Lambda alias
       run: |
         FUNCTION_VERSION=$(aws lambda publish-version --function-name KanriLambda --query Version --output text)
+        
         if [[ "${{ github.ref_name }}" == "main" ]]; then
           ALIAS="production"
         elif [[ "${{ github.ref_name }}" == "staging" ]]; then
@@ -66,5 +67,5 @@ jobs:
     
         aws lambda update-alias \
           --function-name KanriLambda \
-          --name ${{ github.ref_name }} \
+          --name $ALIAS \
           --function-version $FUNCTION_VERSION
