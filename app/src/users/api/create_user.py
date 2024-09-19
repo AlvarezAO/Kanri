@@ -22,7 +22,13 @@ auth = AuthHandler()
 
 
 @timing_decorator
-@router.post(path="/user", summary="Crear Usuario", description="Crea usuario en los registros del sistema")
+@router.post(
+    path="/user",
+    summary="Crear Usuario",
+    description="Crea usuario en los registros del sistema",
+    tags=["users"],
+    name="cl.kanri.usuarios.crear"
+)
 async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUserResponse:
     if valida_existencia_usuario(user, db):
         raise CustomException(name="UsuarioExistente", message="El usuario ya existe en nuestros registros.", status_code=409)

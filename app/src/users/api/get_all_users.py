@@ -21,7 +21,9 @@ router = APIRouter()
     path="/user",
     summary="Listar Usuarios Registrados",
     description="Obtiene un listado de todos los usuarios registrados y habilitados, con su información.",
-    response_model=GetAllUsersResponse
+    response_model=GetAllUsersResponse,
+    tags=["users"],
+    name="cl.kanri.usuarios.obtener"
 )
 @require_permission("view_users")
 async def get_users(

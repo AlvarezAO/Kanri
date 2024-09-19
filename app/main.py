@@ -59,5 +59,5 @@ async def custom_error_handler(request: Request, call_next):
         logger.info(f"Tiempo de procesamiento: {formatted_process_time} segundos")
 
 
-app.include_router(api_router, prefix="/v1")
+app.include_router(api_router)
 handler = Mangum(app)
