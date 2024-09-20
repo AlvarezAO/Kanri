@@ -27,7 +27,7 @@ auth = AuthHandler()
     summary="Crear Usuario",
     description="Crea usuario en los registros del sistema",
     tags=["users"],
-    name="cl.kanri.usuarios.crear"
+    operation_id="cl.kanri.usuarios.crear"
 )
 async def post_user(user: UserCreate, db=Depends(get_db)) -> CreateGetOrUpdateUserResponse:
     if valida_existencia_usuario(user, db):

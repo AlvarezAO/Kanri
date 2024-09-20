@@ -9,8 +9,13 @@ logger = get_logger(__name__)
 router = APIRouter()
 
 
-@router.get(path="/user/{user_id}", summary="Lista un usuario",
-            response_model=CreateGetOrUpdateUserResponse)
+@router.get(
+    path="/user/{user_id}",
+    summary="Lista un usuario",
+    response_model=CreateGetOrUpdateUserResponse,
+    tags=["users"],
+    operation_id="cl.kanri.usuarios.obtener"
+)
 def get_user(db=Depends(get_db), user_id: str = Path(...)):
     user: User = db.query(User).filter(User.userId == user_id).first()
     if not user:
