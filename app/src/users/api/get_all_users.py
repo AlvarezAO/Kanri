@@ -25,7 +25,6 @@ router = APIRouter()
     tags=["users"],
     operation_id="cl.kanri.usuarios.listar"
 )
-@require_permission("view_users")
 async def get_users(
         db=Depends(get_db),
         filters: Optional[str] = Query(None),
@@ -33,6 +32,7 @@ async def get_users(
         page: Optional[int] = Query(1, gt=0),
         order: Optional[str] = Query(None, example="nombre,asc")
 ):
+    logger.info("Entro a la API")
     try:
         query = db.query(User).filter(User.userStatus == UserStatus.ACTIVE.value)
         allowed_fields = ALLOWED_FILTER_FIELDS.get('User', [])

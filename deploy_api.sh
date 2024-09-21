@@ -59,3 +59,5 @@ aws apigateway put-integration --rest-api-id ${API_ID} --resource-id ${PARENT_RE
 # Implementar los cambios en la etapa correspondiente (stage)
 aws apigateway create-deployment --rest-api-id ${API_ID} --stage-name ${STAGE} --region ${REGION}
 echo "Despliegue realizado en el stage ${STAGE}."
+
+
