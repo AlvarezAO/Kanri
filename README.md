@@ -52,7 +52,8 @@ Para desplegar nuevas APIs en API Gateway o actualizar las existentes, ejecuta:
 ## 6. Configuración de la EC2 para Conectar a RDS:
 
 ### SSH Tunnel:
-Usa un túnel SSH para conectar a RDS desde tu máquina local.
+Usa un túnel SSH para conectar a RDS desde tu máquina local. 
+- Se debe actualizar la IP en el SG de la instancia EC2 de quien se vaya a conectar
 
 ```bash
 ssh -i <PEM_FILE> -L 3306:<RDS_ENDPOINT>:3306 ec2-user@<EC2_PUBLIC_IP>
