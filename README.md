@@ -44,7 +44,7 @@ pip install -r requirements.txt
 Para desplegar nuevas APIs en API Gateway o actualizar las existentes, ejecuta:
 
 ```bash
-./deploy_api.sh <code_id> <entorno>
+python app/utils/deployments/deploy_api.py <code_id> <stage>
 ```
 - **code_id**: El identificador único para la API.
 - **entorno**: Puede ser development, staging o production.

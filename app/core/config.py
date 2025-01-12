@@ -18,6 +18,12 @@ class Settings(BaseSettings):
     DATABASE_HOST: str
     DATABASE_PORT: int = 3306
     DATABASE_NAME: str
+    AWS_API_NAME: str
+    AWS_LAMBDA_FUNCTION_NAME: str
+    AWS_ACCOUNT_ID: str
+    AWS_REGION: str
+    AWS_LAYER_NAME: str
+    AWS_LAYER_DIR: str
 
     model_config = SettingsConfigDict(
         case_sensitive=True,
